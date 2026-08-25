@@ -1,0 +1,31 @@
+# STM32 build output
+Debug/
+Release/
+build/
+cmake-build-*/
+out/
+
+# Compiled files
+*.o
+*.obj
+*.a
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.d
+
+# Temporary files
+tmp/
+*.tmp
+*.bak
+*.swp
+*~
+Thumbs.db
+.DS_Store
+
+# IDE-local metadata
+.metadata/
+.vscode/
+.idea/
