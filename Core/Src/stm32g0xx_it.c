@@ -57,6 +57,9 @@
 /* External variables --------------------------------------------------------*/
 extern ADC_HandleTypeDef hadc1;
 extern FDCAN_HandleTypeDef hfdcan1;
+extern I2C_HandleTypeDef hi2c1;
+extern SPI_HandleTypeDef hspi1;
+extern TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -170,6 +173,20 @@ void ADC1_COMP_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM16, FDCAN1_IT0 and FDCAN2_IT0 Interrupt.
   */
 void TIM16_FDCAN_IT0_IRQHandler(void)
@@ -181,6 +198,41 @@ void TIM16_FDCAN_IT0_IRQHandler(void)
   /* USER CODE BEGIN TIM16_FDCAN_IT0_IRQn 1 */
 
   /* USER CODE END TIM16_FDCAN_IT0_IRQn 1 */
+}
+
+/**
+  * @brief This function handles I2C1 event global interrupt / I2C1 wake-up interrupt through EXTI line 23.
+  */
+void I2C1_IRQHandler(void)
+{
+  /* USER CODE BEGIN I2C1_IRQn 0 */
+
+  /* USER CODE END I2C1_IRQn 0 */
+  if (hi2c1.Instance->ISR & (I2C_FLAG_BERR | I2C_FLAG_ARLO | I2C_FLAG_OVR))
+  {
+    HAL_I2C_ER_IRQHandler(&hi2c1);
+  }
+  else
+  {
+    HAL_I2C_EV_IRQHandler(&hi2c1);
+  }
+  /* USER CODE BEGIN I2C1_IRQn 1 */
+
+  /* USER CODE END I2C1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles SPI1/I2S1 Interrupt.
+  */
+void SPI1_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI1_IRQn 0 */
+
+  /* USER CODE END SPI1_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi1);
+  /* USER CODE BEGIN SPI1_IRQn 1 */
+
+  /* USER CODE END SPI1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

@@ -31,7 +31,9 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "phNfcLib.h"
 
+#include "phDriver.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

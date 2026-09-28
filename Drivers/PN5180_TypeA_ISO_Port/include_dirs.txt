@@ -1,0 +1,6 @@
+config
+NxpNfcRdLib/intfs
+NxpNfcRdLib/types
+Platform/DAL/inc
+Platform/DAL/cfg
+RTOS/phOsal/inc
