@@ -21,6 +21,9 @@
 #ifndef PHBALREG_H
 #define PHBALREG_H
 
+#include "stm32g0xx_hal.h"
+#include "ph_Status.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif    /* __cplusplus */
@@ -65,6 +68,7 @@ typedef struct{
 #define PHBAL_REG_TYPE_SERIAL_WIN           0x0003U /**< SerialWin communication channel. */
 #define PHBAL_REG_TYPE_KERNEL_SPI           0x0004U /**< Linux kernel space SPI communication channel. */
 #define PHBAL_REG_TYPE_USER_SPI             0x0005U /**< Linux user space SPI communication channel. */
+#define PHBAL_REG_STM32_SPI_ID               0x01U   /**< ID for the STM32 SPI BAL component. */
 
 /*@}*/
 

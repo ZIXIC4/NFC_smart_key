@@ -16,3 +16,17 @@ NxpNfcRdLib/comps/phhalHw/src/Pn5180/phhalHw_Pn5180_Int.c
 NxpNfcRdLib/comps/phhalHw/src/Pn5180/phhalHw_Pn5180_Instr.c
 NxpNfcRdLib/comps/phhalHw/src/Pn5180/phhalHw_Pn5180_Wait.c
 NxpNfcRdLib/comps/phTools/src/phTools.c
+NxpNfcRdLib/comps/phKeyStore/src/phKeyStore.c
+NxpNfcRdLib/comps/phKeyStore/src/Sw/phKeyStore_Sw.c
+NxpNfcRdLib/comps/phCryptoSym/src/phCryptoSym.c
+NxpNfcRdLib/comps/phCryptoSym/src/Sw/phCryptoSym_Sw.c
+NxpNfcRdLib/comps/phCryptoSym/src/Sw/phCryptoSym_Sw_Aes.c
+NxpNfcRdLib/comps/phCryptoSym/src/Sw/phCryptoSym_Sw_Des.c
+NxpNfcRdLib/comps/phCryptoSym/src/Sw/phCryptoSym_Sw_Int.c
+NxpNfcRdLib/comps/phCryptoRng/src/phCryptoRng.c
+NxpNfcRdLib/comps/phCryptoRng/src/Sw/phCryptoRng_Sw.c
+NxpNfcRdLib/comps/phpalMifare/src/phpalMifare.c
+NxpNfcRdLib/comps/phpalMifare/src/Sw/phpalMifare_Sw.c
+NxpNfcRdLib/comps/phalMfc/src/phalMfc.c
+NxpNfcRdLib/comps/phalMfc/src/phalMfc_Int.c
+NxpNfcRdLib/comps/phalMfc/src/Sw/phalMfc_Sw.c

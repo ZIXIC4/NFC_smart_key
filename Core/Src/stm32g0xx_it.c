@@ -46,6 +46,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
+void phOsal_TickTimerIrqHandler(void);
 
 /* USER CODE END PFP */
 
@@ -133,6 +134,7 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
+  phOsal_TickTimerIrqHandler();
 
   /* USER CODE END SysTick_IRQn 1 */
 }

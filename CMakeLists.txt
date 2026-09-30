@@ -44,14 +44,69 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-  
+    # Add user sources here
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Drivers/STM32G0xx_HAL_Driver/Inc
-    Drivers/PN5180_TypeA_ISO_Port/NxpNfcRdLib/intfs
-    Drivers/PN5180_TypeA_ISO_Port/Platform/DAL/inc"
+)
+
+# PN5180 Type A / ISO and MIFARE Classic Reader Library sources.
+set(PN5180_PORT_ROOT
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/PN5180_TypeA_ISO_Port
+)
+
+file(STRINGS
+    ${PN5180_PORT_ROOT}/sources_core.txt
+    PN5180_CORE_SOURCES
+)
+list(TRANSFORM PN5180_CORE_SOURCES PREPEND "${PN5180_PORT_ROOT}/")
+
+file(STRINGS
+    ${PN5180_PORT_ROOT}/include_dirs.txt
+    PN5180_INCLUDE_DIRS
+)
+list(TRANSFORM PN5180_INCLUDE_DIRS PREPEND "${PN5180_PORT_ROOT}/")
+
+set(PN5180_STM32_PORT_SOURCES
+    ${PN5180_PORT_ROOT}/Platform/DAL/src/phbalReg.c
+    ${PN5180_PORT_ROOT}/Platform/DAL/src/phDriver_Gpio.c
+    ${PN5180_PORT_ROOT}/Platform/DAL/src/phDriver_PinMap.c
+    ${PN5180_PORT_ROOT}/Platform/DAL/src/phDriver_Timer.c
+    ${PN5180_PORT_ROOT}/RTOS/phOsal/src/NullOs/phOsal_NullOs.c
+    ${PN5180_PORT_ROOT}/RTOS/phOsal/src/NullOs/portable/phOsal_Port_CM3.c
+)
+
+add_library(pn5180_typea_iso OBJECT
+    ${PN5180_CORE_SOURCES}
+    ${PN5180_STM32_PORT_SOURCES}
+)
+
+target_link_libraries(pn5180_typea_iso PRIVATE
+    stm32cubemx
+)
+
+target_include_directories(pn5180_typea_iso PRIVATE
+    ${PN5180_INCLUDE_DIRS}
+)
+
+target_compile_definitions(pn5180_typea_iso PRIVATE
+    NXPBUILD_CUSTOMER_HEADER_INCLUDED
+    PH_OSAL_NULLOS
+    PHDRIVER_STM32_PN5180_BOARD
+)
+
+# Application headers and the Reader Library objects share the same component
+# selection and include paths.
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    ${PN5180_INCLUDE_DIRS}
+)
+
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+    NXPBUILD_CUSTOMER_HEADER_INCLUDED
+    PH_OSAL_NULLOS
+    PHDRIVER_STM32_PN5180_BOARD
 )
 
 # Add project symbols (macros)
@@ -65,6 +120,7 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
+    pn5180_typea_iso
 
     # Add user defined libraries
 )

@@ -18,20 +18,47 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "ph_Status.h"
+#include "ph_TypeDefs.h"
+#include "phhalHw.h"
+#include "stm32g0xx_hal.h"
+#include "stm32g0xx_hal_gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "phCryptoRng.h"
+#include "phCryptoSym.h"
+#include "phKeyStore.h"
+#include "phalMfc.h"
+#include "phbalReg.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef enum
+{
+    MFC_SIZE_1K = 0,
+    MFC_SIZE_4K
+} mfc_size_t;
 
+
+typedef enum
+{
+    CARD_TYPE_UNKNOWN = 0,
+    CARD_TYPE_MIFARE_CLASSIC_1K,
+    CARD_TYPE_MIFARE_CLASSIC_4K,
+    CARD_TYPE_ISO14443_4A
+} card_type_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define MFC_TEST_BLOCK_NO          4U
+#define MFC_1K_KEY_COUNT           16U /* Number of sectors */
+#define MFC_4K_KEY_COUNT           40U
+/* NFCLib preloads this development-only entry with FF Key A and FF Key B. */
+#define MFC_KEYSTORE_KEY_NO        1U
+#define MFC_KEYSTORE_KEY_VERSION   0U
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,10 +82,19 @@ TIM_HandleTypeDef htim2;
 PCD_HandleTypeDef hpcd_USB_DRD_FS;
 
 /* USER CODE BEGIN PV */
-
+static phbalReg_Stm32Spi_DataParams_t bal_data;
+static phhalHw_Pn5180_DataParams_t *hal_data;
+static phacDiscLoop_Sw_DataParams_t *disloop_data;
+static phKeyStore_Sw_DataParams_t *keystore_data;
+static phCryptoSym_Sw_DataParams_t *crypto_data;
+static phCryptoRng_Sw_DataParams_t *crypto_rng_data;
+static phalMfc_Sw_DataParams_t *mfc_data;
+static phStatus_t ph_status;
+static uint8_t mfc_block_data[PHAL_MFC_DATA_BLOCK_LENGTH]; /* for testing purpose*/
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
+
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
@@ -68,7 +104,149 @@ static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USB_DRD_FS_PCD_Init(void);
 static void MX_TIM2_Init(void);
+
+
 /* USER CODE BEGIN PFP */
+static void LED_Flash(GPIO_TypeDef *LED_GPIO_Port, uint16_t LED_Pin)
+{
+  while (1)
+  {
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+    HAL_Delay(90);
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin , GPIO_PIN_RESET);
+    HAL_Delay(10);
+  }
+}
+
+static phStatus_t LED_On(GPIO_TypeDef *LED_GPIO_Port, uint16_t LED_Pin)
+{
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+
+  return PH_ERR_SUCCESS;
+}
+
+static card_type_t GetActivatedCardType(
+    const phacDiscLoop_Sw_DataParams_t *pDiscLoop)
+{
+    uint8_t sak;
+
+    if ((pDiscLoop == NULL) ||
+        (pDiscLoop->sTypeATargetInfo.bTotalTagsFound == 0U))
+    {
+        return CARD_TYPE_UNKNOWN;
+    }
+
+    /* Only 1 card is activated, hence referring to index 0 */
+    sak = pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].aSak;
+
+    switch (sak)
+    {
+        case 0x08U:
+            return CARD_TYPE_MIFARE_CLASSIC_1K;
+
+        case 0x18U:
+            return CARD_TYPE_MIFARE_CLASSIC_4K;
+
+        default:
+            /* ISO/IEC 14443-4A includes DESFire and other ISO-DEP cards. */
+            if ((sak & 0x20U) != 0U)
+            {
+                return CARD_TYPE_ISO14443_4A;
+            }
+            return CARD_TYPE_UNKNOWN;
+    }
+}
+
+static phStatus_t HandleMifareClassic(
+    phacDiscLoop_Sw_DataParams_t *pDiscLoop,
+    mfc_size_t cardSize,
+    uint16_t keyNo)
+{
+    phStatus_t status;
+    uint16_t keyCount;
+
+    const uint8_t *uid =
+        pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].aUid;
+
+    uint8_t uidLength =
+        pDiscLoop->sTypeATargetInfo.aTypeA_I3P3[0].bUidSize;
+
+    switch (cardSize)
+    {
+        case MFC_SIZE_1K:
+            keyCount = MFC_1K_KEY_COUNT;
+            break;
+
+        case MFC_SIZE_4K:
+            keyCount = MFC_4K_KEY_COUNT;
+            break;
+
+        default:
+            return PH_ADD_COMPCODE_FIXED(
+                PH_ERR_INVALID_PARAMETER,
+                PH_COMP_AL_MFC);
+    }
+
+    if (keyNo >= keyCount)
+    {
+        return PH_ADD_COMPCODE_FIXED(
+            PH_ERR_INVALID_PARAMETER,
+            PH_COMP_AL_MFC);
+    }
+
+    status = phalMfc_Authenticate(
+        mfc_data,
+        MFC_TEST_BLOCK_NO,    /* Card block to authenticate; this implicitly selects the sector */
+        PHAL_MFC_KEYA,        /* Select card Key A or Key B */
+        keyNo,                /* Reader-side KeyStore entry number */
+        MFC_KEYSTORE_KEY_VERSION, /* Key version within the KeyStore entry */
+        (uint8_t *)uid,
+        uidLength);
+
+    if ((status & PH_ERR_MASK) != PH_ERR_SUCCESS)
+    {
+        return status;
+    }
+
+    status = phalMfc_Read(
+        mfc_data,
+        MFC_TEST_BLOCK_NO,
+        mfc_block_data);
+
+    return status;
+}
+
+static phStatus_t HandleActivatedCard(phacDiscLoop_Sw_DataParams_t *pDiscLoop)
+{
+    card_type_t cardType = GetActivatedCardType(pDiscLoop);
+
+    switch (cardType)
+    {
+        case CARD_TYPE_MIFARE_CLASSIC_1K:
+            return HandleMifareClassic(
+                pDiscLoop,
+                MFC_SIZE_1K,
+                MFC_KEYSTORE_KEY_NO);
+
+        case CARD_TYPE_MIFARE_CLASSIC_4K:
+            return HandleMifareClassic(
+                pDiscLoop,
+                MFC_SIZE_4K,
+                MFC_KEYSTORE_KEY_NO);
+
+        case CARD_TYPE_ISO14443_4A:
+            /*
+             * DESFire AL/HANDLE support remains disabled for Phase 1.
+             * Do not dispatch ISO-DEP cards into an incomplete implementation.
+             */
+            return PH_ERR_UNSUPPORTED_COMMAND;
+
+        case CARD_TYPE_UNKNOWN:
+        default:
+            return PH_ERR_UNSUPPORTED_PARAMETER;
+    }
+}
+
 
 /* USER CODE END PFP */
 
@@ -85,7 +263,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  phNfcLib_AppContext_t nfcLibContext = {0};
+  phStatus_t led_status;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -115,16 +294,85 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
+  /* Initialize the STM32 SPI BAL before handing ownership to NFCLib. */
+  ph_status = phbalReg_Init(&bal_data, sizeof(bal_data));
+  if ((ph_status & PH_ERR_MASK) != PH_ERR_SUCCESS)
+  {
+    LED_Flash(LED1_GPIO_Port, LED1_Pin);
+  }
+
+  nfcLibContext.pBalDataparams = &bal_data;
+  if (phNfcLib_SetContext(&nfcLibContext) != PH_NFCLIB_STATUS_SUCCESS)
+  {
+    LED_Flash(LED1_GPIO_Port, LED1_Pin);
+  }
+
+  if (phNfcLib_Init() != PH_NFCLIB_STATUS_SUCCESS)
+  {
+    LED_Flash(LED1_GPIO_Port, LED1_Pin);
+  }
+
+  hal_data = (phhalHw_Pn5180_DataParams_t *)phNfcLib_GetDataParams(PH_COMP_HAL);
+  disloop_data = (phacDiscLoop_Sw_DataParams_t *)phNfcLib_GetDataParams(PH_COMP_AC_DISCLOOP);
+  keystore_data = (phKeyStore_Sw_DataParams_t *)phNfcLib_GetDataParams(PH_COMP_KEYSTORE);
+  crypto_data = (phCryptoSym_Sw_DataParams_t *)phNfcLib_GetDataParams(PH_COMP_CRYPTOSYM);
+  crypto_rng_data = (phCryptoRng_Sw_DataParams_t *)phNfcLib_GetDataParams(PH_COMP_CRYPTORNG);
+  mfc_data = (phalMfc_Sw_DataParams_t *)phNfcLib_GetDataParams(PH_COMP_AL_MFC);
+
+  if ((hal_data == NULL) ||
+      (disloop_data == NULL) ||
+      (keystore_data == NULL) ||
+      (crypto_data == NULL) ||
+      (crypto_rng_data == NULL) ||
+      (mfc_data == NULL))
+  {
+    LED_Flash(LED1_GPIO_Port, LED1_Pin);
+  }
+
+  ph_status = phacDiscLoop_SetConfig(
+    disloop_data,
+    PHAC_DISCLOOP_CONFIG_PAS_POLL_TECH_CFG,
+    PHAC_DISCLOOP_POS_BIT_MASK_A
+  );
+  if ((ph_status & PH_ERR_MASK) != PH_ERR_SUCCESS)
+  {
+    LED_Flash(LED1_GPIO_Port, LED1_Pin);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
+    ph_status = phacDiscLoop_Run(disloop_data, PHAC_DISCLOOP_ENTRY_POINT_POLL);
 
-    /* USER CODE BEGIN 3 */
+    switch (ph_status & PH_ERR_MASK)
+    {
+    case PHAC_DISCLOOP_DEVICE_ACTIVATED:
+        ph_status = HandleActivatedCard(disloop_data);
+        break;
+
+    case PHAC_DISCLOOP_NO_TECH_DETECTED:
+        /* No card is present; continue polling. */
+        ph_status = PH_ERR_SUCCESS;
+        break;
+
+    case PHAC_DISCLOOP_FAILURE:
+        ph_status = phhalHw_FieldReset(hal_data);
+        break;
+
+    default:
+        break;
+    }
+
+    if ((ph_status & PH_ERR_MASK) != PH_ERR_SUCCESS)
+    {
+      PH_CHECK_SUCCESS_FCT(led_status, LED_On(LED2_GPIO_Port, LED2_Pin));
+    }
+    /* USER CODE END WHILE */
   }
+    /* USER CODE BEGIN 3 */
+
   /* USER CODE END 3 */
 }
 
@@ -633,6 +881,16 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
+{
+  if ((GPIO_Pin == IRQ_Pin) &&
+      (hal_data != NULL) &&
+      (hal_data->pRFISRCallback != NULL))
+  {
+    hal_data->pRFISRCallback(hal_data);
+  }
+}
 
 /* USER CODE END 4 */
 

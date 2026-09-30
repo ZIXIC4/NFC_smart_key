@@ -67,6 +67,8 @@ typedef float float32_t;
 
 #endif /*PH_TYPEDEFS_H*/
 
+#include "ph_Status.h"
+
 #ifndef  PH_STATUS_H
 /**
 * \brief phStatus_t is a signed short value, using the positive range.

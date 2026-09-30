@@ -7,6 +7,7 @@
 #include "phDriver.h"
 #include "stm32g0xx_hal.h"
 
+extern SPI_HandleTypeDef hspi1;
 
 /**
  * @brief Initialize the BAL.
@@ -19,9 +20,9 @@ phStatus_t phbalReg_Init(
     phbalReg_Stm32Spi_DataParams_t *pspi = (phbalReg_Stm32Spi_DataParams_t *) pDataParams;
     pspi -> sBalReg.wId = PH_COMP_BAL | PHBAL_REG_STM32_SPI_ID;
     pspi -> sBalReg.bBalType = PHBAL_REG_TYPE_SPI;
-    pspi -> hspi = hspi1;
-    pspi -> read_timeout = PHBAL_REG_CONFIG_READ_TIMEOUT_MS; // Set default read timeout
-    pspi -> write_timeout = PHBAL_REG_CONFIG_WRITE_TIMEOUT_MS; // Set default write timeout
+    pspi->hSpi = &hspi1;
+    pspi->read_timeout = 100U;
+    pspi->write_timeout = 100U;
 
     if (pspi -> hSpi == NULL)
     {

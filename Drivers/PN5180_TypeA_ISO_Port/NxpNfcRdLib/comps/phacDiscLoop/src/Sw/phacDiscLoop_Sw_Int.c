@@ -50,6 +50,24 @@
 /*********************************************************************************/
 /** LOCALIZED GLOBAL VARIABLES                                                   */
 /*********************************************************************************/
+static phStatus_t phacDiscLoop_Sw_Int_UnsupportedTech(
+        phacDiscLoop_Sw_DataParams_t *pDataParams
+        )
+{
+    (void)pDataParams;
+    return PH_ADD_COMPCODE_FIXED(PH_ERR_UNSUPPORTED_COMMAND, PH_COMP_AC_DISCLOOP);
+}
+
+static phStatus_t phacDiscLoop_Sw_Int_UnsupportedActivate(
+        phacDiscLoop_Sw_DataParams_t *pDataParams,
+        uint8_t bIndex
+        )
+{
+    (void)pDataParams;
+    (void)bIndex;
+    return PH_ADD_COMPCODE_FIXED(PH_ERR_UNSUPPORTED_COMMAND, PH_COMP_AC_DISCLOOP);
+}
+
 static const uint32_t gPasTechTypeMapTable[] = {
     PHHAL_HW_CARDTYPE_ISO14443A,
     PHHAL_HW_CARDTYPE_ISO14443B,
@@ -61,29 +79,29 @@ static const uint32_t gPasTechTypeMapTable[] = {
 
 static const pphacDiscLoop_Sw_Reslns pfColnRelsns[] = {
     &phacDiscLoop_Sw_Int_CollisionResolutionA,
-    &phacDiscLoop_Sw_Int_CollisionResolutionB,
-    &phacDiscLoop_Sw_Int_CollisionResolutionF,
-    &phacDiscLoop_Sw_Int_CollisionResolutionF,
-    &phacDiscLoop_Sw_Int_CollisionResolutionV,
-    &phacDiscLoop_Sw_Int_CollisionResolutionI18000p3m3,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
 };
 
 static const pphacDiscLoop_Sw_DetTechs pfDetTechs[] = {
     &phacDiscLoop_Sw_DetTechTypeA,
-    &phacDiscLoop_Sw_DetTechTypeB,
-    &phacDiscLoop_Sw_DetTechTypeF,
-    &phacDiscLoop_Sw_DetTechTypeF,
-    &phacDiscLoop_Sw_DetTechTypeV,
-    &phacDiscLoop_Sw_DetTechTypeI18000p3m3,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
+    &phacDiscLoop_Sw_Int_UnsupportedTech,
 };
 
 static const pphacDiscLoop_Sw_DeviceActivate pfDeviceActivate[] = {
     &phacDiscLoop_Sw_Int_ActivateA,
-    &phacDiscLoop_Sw_Int_ActivateB,
-    &phacDiscLoop_Sw_Int_ActivateF,
-    &phacDiscLoop_Sw_Int_ActivateF,
-    &phacDiscLoop_Sw_Int_ActivateV,
-    &phacDiscLoop_Sw_Int_ActivateI18000p3m3,
+    &phacDiscLoop_Sw_Int_UnsupportedActivate,
+    &phacDiscLoop_Sw_Int_UnsupportedActivate,
+    &phacDiscLoop_Sw_Int_UnsupportedActivate,
+    &phacDiscLoop_Sw_Int_UnsupportedActivate,
+    &phacDiscLoop_Sw_Int_UnsupportedActivate,
 };
 
 /* *****************************************************************************************************************

@@ -14,6 +14,15 @@
 #define NXPBUILD__PHPAL_I14443P4A_SW
 #define NXPBUILD__PHPAL_I14443P4_SW
 
-/* No MIFARE command helpers, KeyStore, Crypto, NFC-B/F/V or target mode. */
+/* MIFARE Classic application stack and development key storage. */
+#define NXPBUILD__PH_KEYSTORE_SW
+#define NXPBUILD__PHPAL_MIFARE_SW
+#define NXPBUILD__PHAL_MFC_SW
+
+/* Software crypto components reserved for later secure-card integration. */
+#define NXPBUILD__PH_CRYPTOSYM_SW
+#define NXPBUILD__PH_CRYPTORNG_SW
+
+/* No DESFire EVx application layer, NFC-B/F/V or target mode. */
 /* Select PH_OSAL_NULLOS or PH_OSAL_FREERTOS in compiler definitions. */
 #endif

@@ -84,10 +84,10 @@ extern void phOsal_Sleep(void);
 extern void phOsal_WakeUp(void);
 
 /**
-* \brief This function SysTick Handler of processor.
-*
-*/
-extern void SysTick_Handler(void);
+ * \brief Advances the NullOS timer from the platform's 1 ms SysTick handler.
+ *
+ */
+extern void phOsal_TickTimerIrqHandler(void);
 
 /*@}*/
 #endif /* PHOSAL_NULLOS_PORT_H_ */
